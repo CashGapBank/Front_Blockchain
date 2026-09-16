@@ -16,6 +16,11 @@ Cash Gap Bank는 스타트업의 미래 현금흐름을 검증하고, 이를 바
 
 현재 프론트엔드는 목업 데이터로 동작하며 백엔드 API, 지갑, 배포된 컨트랙트와는 아직 연결되지 않았습니다.
 
+## Team Ownership
+
+- 강소현: Frontend, Blockchain, Credential, Smart Contract, Integration, Docs
+- 이신우: Backend, AI, Data, Risk/Time-to-Cash/Recovery Engine
+
 ## 프로젝트 구조
 
 ```text

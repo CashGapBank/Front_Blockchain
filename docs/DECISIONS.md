@@ -17,3 +17,11 @@ Reason: 개인정보와 계약 원문 보호, 저장비용 절감, 오프체인 
 `paymentProbability`, `expectedSettlementDays`, `counterpartyRisk`, `duplicateFinancing`, `safeAdvanceLimit`를 함께 반환한다.
 
 Reason: 은행 심사에서 설명 가능성과 정책 연결성을 확보한다.
+
+## ADR-004: 컨트랙트 역할과 상태 전이 제한
+
+컨트랙트 배포자를 owner로 두고 verifier와 financier 역할을 별도로 등록한다. 검증은 verifier, 금융·정산은 financier만 수행하며, 철회는 issuer 또는 owner만 수행한다.
+
+Claim 상태는 `REGISTERED → VERIFIED → FINANCED → SETTLED` 흐름을 따르고, 철회는 `REGISTERED` 또는 `VERIFIED`에서만 허용한다.
+
+Reason: 누구나 금융 상태를 변경할 수 있으면 중복 금융 방지와 검증 신뢰성이 무력화된다. 역할과 전이를 컨트랙트에서 검증해 프론트의 실수나 악의적 호출을 방어한다.

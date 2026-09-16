@@ -63,8 +63,12 @@ Consumer: 강소현 (Frontend/Blockchain)
 
 ## Contract events consumed by frontend
 
-- `ClaimRegistered(claimId, startupId, claimType)`
+- `ClaimRegistered(claimId, startupId, amount, issuer)`
 - `ClaimStatusUpdated(claimId, status)`
 - `ClaimRevoked(claimId, issuer, reason)`
 - `ClaimFinanced(claimId, lender, amount)`
 - `ClaimSettled(claimId, settledAt)`
+- `VerifierUpdated(account, enabled)`
+- `FinancierUpdated(account, enabled)`
+
+권한 참고: 컨트랙트 배포자는 owner이며 verifier/financier 계정을 등록할 수 있습니다. API 연동 시 이 역할 상태와 transaction pending/success/failure를 함께 반영해야 합니다.
