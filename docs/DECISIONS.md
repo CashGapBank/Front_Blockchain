@@ -37,3 +37,9 @@ Reason: Credential의 발급·만료·철회 생명주기는 Claim 금융 생명
 `revokeClaim`은 기존 문자열 사유를 입력으로 받을 수 있지만 온체인 이벤트에는 `keccak256(reason)`만 기록한다.
 
 Reason: 사유 원문에 계약정보나 개인정보가 포함될 가능성을 줄이고, 필요한 경우 승인된 오프체인 시스템에서 원문을 관리한다.
+
+## ADR-007: Frontend는 ethers service layer를 통해 지갑과 컨트랙트를 연결
+
+React component가 직접 provider나 contract를 다루지 않고 `frontend/src/blockchain/registry.ts`에서 지갑 연결과 transaction을 수행한다. 배포 주소가 없으면 API나 가짜 transaction을 호출하지 않고 로컬 데모 상태로 fallback한다.
+
+Reason: 블록체인 호출 로직을 UI에서 분리하고, 백엔드/API가 준비되기 전에도 데모 화면을 실행할 수 있도록 한다.
