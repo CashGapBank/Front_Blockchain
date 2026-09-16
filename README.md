@@ -15,7 +15,7 @@ Cash Gap Bank는 스타트업의 미래 현금흐름을 검증하고, 이를 바
 - `VCCredentialRegistry.sol` VC Credential hash 및 상태 관리
 - API 계약 및 아키텍처·데모 시나리오 문서 초안
 
-현재 프론트엔드는 목업 데이터로 동작하며 백엔드 API, 지갑, 배포된 컨트랙트와는 아직 연결되지 않았습니다.
+백엔드 API는 아직 연결하지 않았습니다. 컨트랙트 주소와 호환 지갑을 설정하면 Frontend에서 Claim 등록·검증·금융·철회·정산 transaction을 실행할 수 있고, 설정이 없으면 로컬 데모 fallback으로 동작합니다.
 
 ## Team Ownership
 
@@ -41,6 +41,13 @@ Node.js 20 이상을 권장합니다.
 cd frontend
 npm install
 npm run dev
+```
+
+실제 지갑 연동을 사용할 때는 `frontend/.env.example`을 복사해 `frontend/.env.local`을 만들고 배포된 `FutureCashRegistry` 주소를 입력합니다.
+
+```bash
+cp .env.example .env.local
+# VITE_FUTURE_CASH_REGISTRY_ADDRESS=0x...
 ```
 
 브라우저에서 Vite가 출력한 주소(기본값 `http://localhost:5173`)를 엽니다.
@@ -72,6 +79,7 @@ npm run build
 - [Progress Log](docs/PROGRESS.md)
 - [Architecture Decisions](docs/DECISIONS.md)
 - [Demo Scenario](docs/DEMO_SCENARIO.md)
+- [Blockchain README](blockchain/README.md)
 
 ## 협업 규칙
 

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import type { CredentialEvent, FutureCashClaim, RecoveryOption } from '../../shared/types';
+import { connectWallet, registerClaimOnChain, registryAddress, updateClaimOnChain } from './blockchain/registry';
 
 type View = 'startup' | 'bank' | 'graph' | 'credential';
 
@@ -23,31 +24,39 @@ const recoveryOptions: RecoveryOption[] = [
   { type: 'NEW_INVESTOR_MATCHING', label: '추가 투자자 매칭', fitScore: 0.58 },
 ];
 
-function ClaimRows({ claims }: { claims: FutureCashClaim[] }) {
-  return <div className="claim-list">{claims.map((claim) => <article className="claim" key={claim.claimId}>
+type ClaimAction = 'verify' | 'finance' | 'settle' | 'revoke';
+
+function ClaimRows({ claims, onAction }: { claims: FutureCashClaim[]; onAction?: (action: ClaimAction, claim: FutureCashClaim) => Promise<string> }) {
+  const [pendingId, setPendingId] = useState('');
+  const [actionMessage, setActionMessage] = useState('');
+  const actionFor = (claim: FutureCashClaim): ClaimAction | undefined => claim.status === 'REGISTERED' ? 'verify' : claim.status === 'VERIFIED' ? 'finance' : claim.status === 'FINANCED' ? 'settle' : undefined;
+  const run = (action: ClaimAction, claim: FutureCashClaim) => { if (!onAction) return; setPendingId(claim.claimId); setActionMessage('transaction 처리 중...'); void onAction(action, claim).then((hash) => setActionMessage(hash ? `완료 · tx: ${hash.slice(0, 12)}...` : '완료 · 로컬 상태에 반영되었습니다.')).catch((error: unknown) => setActionMessage(error instanceof Error ? error.message : 'transaction에 실패했습니다.')).finally(() => setPendingId('')); };
+  return <><div className="claim-list">{claims.map((claim) => <article className="claim" key={claim.claimId}>
     <div className="claim-icon">{claim.claimType === 'INVESTMENT_COMMITMENT' ? '↗' : '▤'}</div>
     <div className="claim-info"><b>{claim.counterparty} {claim.claimType === 'INVOICE' ? 'Invoice' : '투자확약'}</b><span>{claim.claimType} · {claim.claimId}</span></div>
     <div><span className="label">AMOUNT</span><b>{money(claim.amount)}</b></div>
     <div><span className="label">DUE DATE</span><b>{claim.dueDate}</b></div>
-    <span className={`status ${claim.status.toLowerCase()}`}>{claim.status}</span>
-  </article>)}</div>;
+    <span className={`status ${claim.status.toLowerCase()}`}>{claim.status}</span><div className="claim-actions">{onAction && actionFor(claim) && <button className="action-button" disabled={pendingId === claim.claimId} onClick={() => run(actionFor(claim)!, claim)}>{pendingId === claim.claimId ? '처리 중' : actionFor(claim)}</button>}{onAction && (claim.status === 'REGISTERED' || claim.status === 'VERIFIED') && <button className="revoke-button" disabled={pendingId === claim.claimId} onClick={() => run('revoke', claim)}>revoke</button>}</div>
+  </article>)}</div>{actionMessage && <p className="wallet-message">{actionMessage}</p>}</>;
 }
 
-function Registration({ onRegister }: { onRegister: (claim: FutureCashClaim) => void }) {
+function Registration({ onRegister }: { onRegister: (claim: FutureCashClaim) => Promise<string> }) {
   const [kind, setKind] = useState<'INVOICE' | 'INVESTMENT_COMMITMENT'>('INVOICE');
   const [counterparty, setCounterparty] = useState('');
   const [amount, setAmount] = useState('');
   const [dueDate, setDueDate] = useState('');
-  const [result, setResult] = useState<'idle' | 'success'>('idle');
+  const [result, setResult] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
+  const [message, setMessage] = useState('');
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!counterparty || !amount || !dueDate) return;
-    onRegister({ claimId: `FC-2026-${String(Date.now()).slice(-4)}`, startupId: 'ST001', claimType: kind, amount: Number(amount), counterparty, dueDate, status: 'REGISTERED' });
-    setResult('success'); setCounterparty(''); setAmount(''); setDueDate('');
+    const claim: FutureCashClaim = { claimId: `FC-2026-${String(Date.now()).slice(-4)}`, startupId: 'ST001', claimType: kind, amount: Number(amount), counterparty, dueDate, status: 'REGISTERED' };
+    setResult('pending'); setMessage('지갑 확인 및 transaction 처리 중...');
+    void onRegister(claim).then((hash) => { setResult('success'); setMessage(hash ? `등록 완료 · tx: ${hash.slice(0, 12)}...` : '등록 완료 · 로컬 데모 상태에 반영되었습니다.'); setCounterparty(''); setAmount(''); setDueDate(''); }).catch((error: unknown) => { setResult('error'); setMessage(error instanceof Error ? error.message : 'Claim 등록에 실패했습니다.'); });
   };
   return <article className="panel registration"><div className="section-title compact"><div><p className="eyebrow">NEW CLAIM</p><h2>Future Cash 등록</h2></div><span className="local-badge">LOCAL DEMO</span></div>
     <form onSubmit={submit} className="form-grid"><label>Claim 유형<select value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}><option value="INVOICE">Invoice</option><option value="INVESTMENT_COMMITMENT">Term Sheet</option></select></label><label>Counterparty<input value={counterparty} onChange={(e) => setCounterparty(e.target.value)} placeholder="예: Hospital A" /></label><label>금액 (KRW)<input type="number" min="1" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="62000000" /></label><label>예정 입금일<input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></label><button className="primary" type="submit">Claim 등록 시뮬레이션</button></form>
-    {result === 'success' && <p className="success-message">등록 완료 · 블록체인 transaction 연결 전 로컬 상태에 반영되었습니다.</p>}
+    {result !== 'idle' && <p className={result === 'error' ? 'error-message' : 'success-message'}>{message}</p>}
   </article>;
 }
 
@@ -60,13 +69,17 @@ function Recovery() { return <article className="panel recovery"><p className="e
 export function App() {
   const [active, setActive] = useState<View>('startup');
   const [claims, setClaims] = useState(initialClaims);
-  const register = (claim: FutureCashClaim) => setClaims((current) => [claim, ...current]);
+  const [walletAddress, setWalletAddress] = useState('');
+  const [walletMessage, setWalletMessage] = useState('');
+  const connect = () => { setWalletMessage('지갑 연결 중...'); void connectWallet().then(({ address, chainId }) => { setWalletAddress(address); setWalletMessage(`Chain ${chainId.toString()} 연결됨`); }).catch((error: unknown) => setWalletMessage(error instanceof Error ? error.message : '지갑 연결에 실패했습니다.')); };
+  const register = async (claim: FutureCashClaim) => { if (walletAddress && registryAddress) { const hash = await registerClaimOnChain(claim); setClaims((current) => [claim, ...current]); return hash; } setClaims((current) => [claim, ...current]); return ''; };
+  const runClaimAction = async (action: ClaimAction, claim: FutureCashClaim) => { const hash = walletAddress && registryAddress ? await updateClaimOnChain(action, claim.claimId, 'issuer withdrew') : ''; const nextStatus: FutureCashClaim['status'] = action === 'verify' ? 'VERIFIED' : action === 'finance' ? 'FINANCED' : action === 'settle' ? 'SETTLED' : 'REVOKED'; setClaims((current) => current.map((item) => item.claimId === claim.claimId ? { ...item, status: nextStatus } : item)); return hash; };
   const titles: Record<View, [string, string]> = { startup: ['STARTUP WORKSPACE', '안녕하세요, Startup A'], bank: ['BANK RISK WORKSPACE', 'Future Cash Portfolio'], graph: ['RELATIONSHIP WORKSPACE', 'Future Cash Graph'], credential: ['VERIFICATION WORKSPACE', 'Credential Timeline'] };
   const [eyebrow, title] = titles[active];
   return <main className="app-shell"><aside><div className="brand"><span className="brand-mark">◆</span><div>Cash Gap <b>Bank</b><small>Future Cash Finance</small></div></div><nav>{([['startup', 'Startup Dashboard'], ['bank', 'Bank Dashboard'], ['graph', 'Future Cash Graph'], ['credential', 'Credential Timeline']] as [View, string][]).map(([view, label]) => <button key={view} className={active === view ? 'active' : ''} onClick={() => setActive(view)}>{label}</button>)}</nav><div className="side-note"><span>●</span> Local Demo Network<br /><small>API / wallet not connected</small></div></aside>
-    <section className="content"><header><div><p className="eyebrow">{eyebrow}</p><h1>{title}</h1><p className="muted">미래 현금흐름을 확인하고 필요한 자금을 준비하세요.</p></div><button className="wallet">◉ Local wallet</button></header>
-      {active === 'startup' && <><div className="hero"><div className="hero-copy"><p className="eyebrow light">AVAILABLE ADVANCE CAPACITY</p><strong>{money(56_000_000)}</strong><p>AI 분석 및 검증된 Future Cash 기준 · 로컬 데모</p></div><div className="hero-score"><span>Future Cash Confidence</span><b>87.2</b><small>Demo result</small></div></div><div className="grid stats"><article><span>예상 30일 유입</span><b>{money(72_000_000)}</b><small className="positive">+12.4% vs. last month</small></article><article><span>검증된 청구권</span><b>{claims.filter((claim) => claim.status === 'VERIFIED').length}건</b><small>{money(520_000_000)} total value</small></article><article><span>평균 입금 확률</span><b>94.0%</b><small className="positive">LOCAL DEMO</small></article></div><div className="section-title"><div><p className="eyebrow">CLAIMS MONITORING</p><h2>Future Cash Claims</h2></div></div><ClaimRows claims={claims}/><Registration onRegister={register}/><Recovery /></>}
-      {active === 'bank' && <><div className="section-title"><div><p className="eyebrow">PORTFOLIO MONITORING</p><h2>Bank Claim Portfolio</h2></div><span className="local-badge">READ-ONLY DEMO</span></div><div className="grid stats"><article><span>Total claim value</span><b>{money(claims.reduce((sum, claim) => sum + claim.amount, 0))}</b></article><article><span>Verified exposure</span><b>{money(claims.filter((claim) => claim.status === 'VERIFIED').reduce((sum, claim) => sum + claim.amount, 0))}</b></article><article><span>Financing guard</span><b className="positive">ACTIVE</b><small>Duplicate financing protected by contract rule</small></article></div><ClaimRows claims={claims}/><Recovery /></>}
+    <section className="content"><header><div><p className="eyebrow">{eyebrow}</p><h1>{title}</h1><p className="muted">미래 현금흐름을 확인하고 필요한 자금을 준비하세요.</p>{walletMessage && <p className="wallet-message">{walletMessage}</p>}</div><button className="wallet" onClick={connect}>◉ {walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : 'Connect wallet'}</button></header>
+      {active === 'startup' && <><div className="hero"><div className="hero-copy"><p className="eyebrow light">AVAILABLE ADVANCE CAPACITY</p><strong>{money(56_000_000)}</strong><p>AI 분석 및 검증된 Future Cash 기준 · 로컬 데모</p></div><div className="hero-score"><span>Future Cash Confidence</span><b>87.2</b><small>Demo result</small></div></div><div className="grid stats"><article><span>예상 30일 유입</span><b>{money(72_000_000)}</b><small className="positive">+12.4% vs. last month</small></article><article><span>검증된 청구권</span><b>{claims.filter((claim) => claim.status === 'VERIFIED').length}건</b><small>{money(520_000_000)} total value</small></article><article><span>평균 입금 확률</span><b>94.0%</b><small className="positive">LOCAL DEMO</small></article></div><div className="section-title"><div><p className="eyebrow">CLAIMS MONITORING</p><h2>Future Cash Claims</h2></div></div><ClaimRows claims={claims} onAction={runClaimAction}/><Registration onRegister={register}/><Recovery /></>}
+      {active === 'bank' && <><div className="section-title"><div><p className="eyebrow">PORTFOLIO MONITORING</p><h2>Bank Claim Portfolio</h2></div><span className="local-badge">READ-ONLY DEMO</span></div><div className="grid stats"><article><span>Total claim value</span><b>{money(claims.reduce((sum, claim) => sum + claim.amount, 0))}</b></article><article><span>Verified exposure</span><b>{money(claims.filter((claim) => claim.status === 'VERIFIED').reduce((sum, claim) => sum + claim.amount, 0))}</b></article><article><span>Financing guard</span><b className="positive">ACTIVE</b><small>Duplicate financing protected by contract rule</small></article></div><ClaimRows claims={claims} onAction={runClaimAction}/><Recovery /></>}
       {active === 'graph' && <Graph />}
       {active === 'credential' && <CredentialTimeline />}
     </section></main>;

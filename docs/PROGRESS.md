@@ -18,6 +18,10 @@
 - [x] `VCCredentialRegistry.sol` Credential hash/status 관리
 - [x] Blockchain 실행·배포 절차 README 문서화
 - [x] API 없이 동작하는 Claim 등록 로컬 상태 흐름
+- [x] ethers 기반 wallet/contract service layer
+- [x] MetaMask 연결 및 Claim 등록 transaction UX
+- [x] transaction pending/success/error 상태 표시
+- [x] Claim 검증·금융·철회·정산 transaction UI 연결
 - [x] Bank Dashboard, Credential Timeline, Future Cash Graph, Recovery 화면 연결
 
 ### Shared / Docs
@@ -42,7 +46,9 @@
 - [ ] Graph Risk Engine
 - [ ] Time-to-Cash Engine
 - [ ] Recovery Engine
-- [ ] 프론트 API·지갑·배포 컨트랙트 연동
+- [x] ethers 기반 지갑 및 배포 컨트랙트 adapter 연결
+- [ ] 테스트넷 컨트랙트 주소와 실제 ABI 배포물 연결
+- [ ] 검증·금융·철회·정산 transaction UI 연결
 - [ ] 실제 Credential Timeline 및 Future Cash Graph 기능
 
 ### Integration Issues
