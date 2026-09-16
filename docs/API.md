@@ -65,7 +65,7 @@ Consumer: 강소현 (Frontend/Blockchain)
 
 - `ClaimRegistered(claimId, startupId, amount, issuer)`
 - `ClaimStatusUpdated(claimId, status)`
-- `ClaimRevoked(claimId, issuer, reason)`
+- `ClaimRevoked(claimId, issuer, reasonHash)`
 - `ClaimFinanced(claimId, lender, amount)`
 - `ClaimSettled(claimId, settledAt)`
 - `VerifierUpdated(account, enabled)`

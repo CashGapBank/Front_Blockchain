@@ -19,7 +19,7 @@ contract FutureCashRegistryTest {
     function testRegisterAndVerify() public {
         registry.registerClaim(CLAIM, STARTUP, DOCUMENT, 50_000_000);
         registry.verifyClaim(CLAIM);
-        (, , , , , FutureCashRegistry.Status status, ) = registry.claims(CLAIM);
+        (, , , , , FutureCashRegistry.Status status, , , ) = registry.claims(CLAIM);
         require(status == FutureCashRegistry.Status.VERIFIED, "not verified");
     }
 
@@ -38,8 +38,8 @@ contract FutureCashRegistryTest {
         (bool duplicateOk, ) = address(registry).call(abi.encodeCall(registry.markFinanced, (CLAIM)));
         require(!duplicateOk, "duplicate financing accepted");
         registry.settleClaim(CLAIM);
-        (, , , , , FutureCashRegistry.Status status, bool financed) = registry.claims(CLAIM);
-        require(status == FutureCashRegistry.Status.SETTLED && financed, "not settled");
+        (, , , , , FutureCashRegistry.Status status, bool financed, address financier, uint256 financedAt) = registry.claims(CLAIM);
+        require(status == FutureCashRegistry.Status.SETTLED && financed && financier == address(this) && financedAt > 0, "not settled");
     }
 
     function testRevokedClaimCannotBeFinanced() public {

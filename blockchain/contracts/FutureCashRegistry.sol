@@ -14,6 +14,8 @@ contract FutureCashRegistry {
         uint256 amount;
         Status status;
         bool financed;
+        address financier;
+        uint256 financedAt;
     }
 
     mapping(bytes32 => Claim) public claims;
@@ -44,7 +46,7 @@ contract FutureCashRegistry {
     event ClaimRegistered(bytes32 indexed claimId, bytes32 indexed startupId, uint256 amount, address issuer);
     event ClaimStatusUpdated(bytes32 indexed claimId, Status status);
     event ClaimFinanced(bytes32 indexed claimId, address indexed lender, uint256 amount);
-    event ClaimRevoked(bytes32 indexed claimId, address indexed issuer, string reason);
+    event ClaimRevoked(bytes32 indexed claimId, address indexed issuer, bytes32 reasonHash);
     event ClaimSettled(bytes32 indexed claimId, uint256 settledAt);
     event VerifierUpdated(address indexed account, bool enabled);
     event FinancierUpdated(address indexed account, bool enabled);
@@ -57,7 +59,7 @@ contract FutureCashRegistry {
     function registerClaim(bytes32 claimId, bytes32 startupId, bytes32 documentHash, uint256 amount) external {
         require(!claimExists[claimId], "duplicate claim");
         require(amount > 0, "amount is zero");
-        claims[claimId] = Claim(claimId, startupId, documentHash, msg.sender, amount, Status.REGISTERED, false);
+        claims[claimId] = Claim(claimId, startupId, documentHash, msg.sender, amount, Status.REGISTERED, false, address(0), 0);
         claimExists[claimId] = true;
         emit ClaimRegistered(claimId, startupId, amount, msg.sender);
     }
@@ -95,6 +97,8 @@ contract FutureCashRegistry {
         require(claim.status == Status.VERIFIED, "claim not verified");
         require(!claim.financed, "duplicate financing");
         claim.financed = true;
+        claim.financier = msg.sender;
+        claim.financedAt = block.timestamp;
         claim.status = Status.FINANCED;
         emit ClaimFinanced(claimId, msg.sender, claim.amount);
         emit ClaimStatusUpdated(claimId, claim.status);
@@ -105,7 +109,7 @@ contract FutureCashRegistry {
         require(msg.sender == owner || msg.sender == claim.issuer, "not issuer");
         require(claim.status == Status.REGISTERED || claim.status == Status.VERIFIED, "cannot revoke");
         claim.status = Status.REVOKED;
-        emit ClaimRevoked(claimId, msg.sender, reason);
+        emit ClaimRevoked(claimId, msg.sender, keccak256(bytes(reason)));
         emit ClaimStatusUpdated(claimId, claim.status);
     }
 

@@ -25,3 +25,15 @@ Reason: 은행 심사에서 설명 가능성과 정책 연결성을 확보한다
 Claim 상태는 `REGISTERED → VERIFIED → FINANCED → SETTLED` 흐름을 따르고, 철회는 `REGISTERED` 또는 `VERIFIED`에서만 허용한다.
 
 Reason: 누구나 금융 상태를 변경할 수 있으면 중복 금융 방지와 검증 신뢰성이 무력화된다. 역할과 전이를 컨트랙트에서 검증해 프론트의 실수나 악의적 호출을 방어한다.
+
+## ADR-005: VC Credential을 별도 Registry로 분리
+
+VC Credential은 `VCCredentialRegistry`에서 credential hash, subject ID, issuer, 상태와 시각만 관리한다. Future Cash Claim은 Credential의 원문이나 PII를 직접 보관하지 않는다.
+
+Reason: Credential의 발급·만료·철회 생명주기는 Claim 금융 생명주기와 다르며, 별도 Registry로 분리하면 재사용과 권한 분리가 가능하다.
+
+## ADR-006: 철회 사유는 hash만 이벤트에 기록
+
+`revokeClaim`은 기존 문자열 사유를 입력으로 받을 수 있지만 온체인 이벤트에는 `keccak256(reason)`만 기록한다.
+
+Reason: 사유 원문에 계약정보나 개인정보가 포함될 가능성을 줄이고, 필요한 경우 승인된 오프체인 시스템에서 원문을 관리한다.

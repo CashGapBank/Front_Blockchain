@@ -7,11 +7,12 @@ Cash Gap Bank는 스타트업의 미래 현금흐름을 검증하고, 이를 바
 - React + TypeScript + Vite 기반 Startup/Bank Dashboard 목업
 - Future Cash Claim 목록, 현금 유입 예측, 선급 가능 한도, Recovery 영역 UI
 - `shared/types`에 Claim 및 AI 분석 결과 공용 타입 정의
-- `FutureCashRegistry.sol` 스마트 컨트랙트 기본 구현
+- `FutureCashRegistry.sol` 스마트 컨트랙트 구현
   - Claim 등록·검증·상태 변경
   - 금융 처리 및 정산
   - 중복 Claim 등록 및 중복 금융 방지
   - Claim 철회
+- `VCCredentialRegistry.sol` VC Credential hash 및 상태 관리
 - API 계약 및 아키텍처·데모 시나리오 문서 초안
 
 현재 프론트엔드는 목업 데이터로 동작하며 백엔드 API, 지갑, 배포된 컨트랙트와는 아직 연결되지 않았습니다.
