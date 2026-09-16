@@ -1,0 +1,1 @@
+export const CLAIM_STATUSES = ['REGISTERED', 'VERIFIED', 'FINANCED', 'REVOKED', 'SETTLED'] as const;
