@@ -1,5 +1,17 @@
 # Architecture Decisions
 
+## ADR-008: Backend is the single source for dashboard data
+
+The frontend reads claims and claim sources from `backend-ai-data` through `/api/cash-claims` and `/api/cash-claim-sources`. Frontend-local claim, recovery, and graph fixtures are not used for normal rendering.
+
+Reason: keeping a second set of mock records caused the dashboard and backend state to diverge. The backend seed/DB is retained as the local development source of truth.
+
+## ADR-009: Blockchain is an optional transaction layer
+
+The API and AI dashboard remains usable without a browser wallet. Blockchain actions are enabled only when a wallet, a non-zero registry address, and the configured chain are available. After a successful transaction, the frontend calls the backend chain-status webhook.
+
+Reason: read-only analysis should not be blocked by wallet availability, while persisted status must remain consistent between the chain and backend.
+
 ## ADR-001: Future Cash Claim으로 도메인 통합
 
 투자확약과 매출채권을 별도 상품으로만 구현하지 않고 동일한 `FutureCashClaim`으로 모델링한다.

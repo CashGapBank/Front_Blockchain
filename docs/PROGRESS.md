@@ -1,5 +1,32 @@
 # Progress Log
 
+## 2026-09-17
+
+### Backend / Frontend Integration
+
+- [x] `Backend_AI_Data` repository cloned into `backend-ai-data/`
+- [x] Backend dashboard query endpoints added: `GET /api/cash-claims`, `GET /api/cash-claim-sources`
+- [x] Frontend claim list, source selection, and recovery analysis connected to backend API
+- [x] Frontend claim/recovery/graph fixture data removed
+- [x] Frontend loading/error/success states added for API-backed flows
+- [x] API base URL documented via `frontend/.env.example` and `docs/API.md`
+- [ ] Local backend dependency install and full API test
+
+### Blockchain UX
+
+- [x] API/AI dashboard remains usable without MetaMask
+- [x] Wallet errors changed to actionable optional-transaction guidance
+- [x] Zero-address blockchain configuration rejected with a deployment message
+- [x] Deploy local `FutureCashRegistry` on Anvil chain `31337` and configure `frontend/.env.local`
+- [x] Successful frontend blockchain transactions synchronize status through backend webhook
+
+### Functional review
+
+- [x] Claim row overflow fixed with bounded columns and text truncation
+- [x] Financed, settled, and revoked status styles added
+- [x] Frontend source-of-truth and blockchain synchronization documented
+- [ ] Credential timeline read API/webhook consumer remains a future integration item
+
 ## 2026-09-16
 
 ### Frontend / Blockchain

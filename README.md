@@ -1,5 +1,24 @@
 # Cash Gap Bank
 
+## Current integration status (2026-09-17)
+
+- `backend-ai-data/` contains the cloned Backend/AI/Data service repository.
+- Frontend dashboard data is loaded from `http://127.0.0.1:4000` through `VITE_API_BASE_URL`; claim and source fixtures are not duplicated in the frontend.
+- `GET /api/cash-claims` and `GET /api/cash-claim-sources` provide dashboard data and claim creation sources.
+- Successful blockchain transactions are synchronized to the backend through `POST /api/webhooks/chain-status-changed`.
+- Local blockchain development uses Anvil chain `31337`, RPC `http://127.0.0.1:8545`, and the locally deployed `FutureCashRegistry` address in `frontend/.env.local`.
+- API/AI mode does not require MetaMask. Blockchain actions require a wallet, a deployed registry address, and the configured network.
+
+### Local services
+
+```text
+Frontend:  http://127.0.0.1:5173
+Backend:   http://127.0.0.1:4000
+AI:        http://127.0.0.1:8000
+Anvil:     http://127.0.0.1:8545 (chain 31337)
+Postgres:  127.0.0.1:55432
+```
+
 Cash Gap Bank는 스타트업의 미래 현금흐름을 검증하고, 이를 바탕으로 단기 자금 공급과 회수 경로를 연결하는 AI·블록체인 기반 금융 플랫폼 프로토타입입니다.
 
 ## 현재 구현 범위

@@ -10,6 +10,7 @@ export interface FutureCashClaim {
   dueDate: string;
   status: ClaimStatus;
   documentHash?: string;
+  advanceId?: string | null;
 }
 
 export interface AnalysisResult {

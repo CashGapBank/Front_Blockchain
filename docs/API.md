@@ -1,5 +1,29 @@
 # API Contract
 
+## Backend dashboard integration
+
+The frontend uses `VITE_API_BASE_URL` (default `http://127.0.0.1:4000`) and reads dashboard data from the backend. The frontend does not maintain a separate claim or recovery fixture.
+
+### GET `/api/cash-claims?startup_id={startup_id}`
+
+Returns claims joined with source amount, counterparty, due date, chain status, and related advance ID.
+
+### GET `/api/cash-claim-sources?startup_id={startup_id}`
+
+Returns invoice and investment-commitment sources available for creating a claim.
+
+### POST `/api/cash-claims`
+
+The canonical request is `{ startup_id, source_type, source_id, document_text }`. The response includes `cash_claim_id`, `advance_id`, `document_intelligence`, `ai_scores`, and `safe_advance_capacity`.
+
+### POST `/api/webhooks/chain-status-changed`
+
+After a successful blockchain transaction, the frontend sends `{ cash_claim_id, new_chain_status, timestamp }` so the backend dashboard and database reflect the on-chain lifecycle.
+
+### CORS
+
+The backend allows the frontend origin configured by `FRONTEND_ORIGIN` (default `http://127.0.0.1:5173`) and supports browser `OPTIONS` preflight requests.
+
 API의 기준은 이 문서와 `shared/types`입니다. 응답 필드명을 임의로 바꾸지 않습니다.
 
 ## POST `/claims/analyze`

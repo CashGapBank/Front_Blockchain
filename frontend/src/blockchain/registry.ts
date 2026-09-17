@@ -10,40 +10,43 @@ const registryAbi = [
   'function claims(bytes32) view returns (bytes32,bytes32,bytes32,address,uint256,uint8,bool,address,uint256)',
 ] as const;
 
-declare global {
-  interface Window { ethereum?: Eip1193Provider }
-}
-
-interface Eip1193Provider {
-  request(args: { method: string; params?: unknown[] }): Promise<unknown>;
-}
+declare global { interface Window { ethereum?: Eip1193Provider } }
+interface Eip1193Provider { request(args: { method: string; params?: unknown[] }): Promise<unknown> }
 
 export const registryAddress = import.meta.env.VITE_FUTURE_CASH_REGISTRY_ADDRESS as string | undefined;
-
-export interface WalletConnection {
-  provider: BrowserProvider;
-  address: string;
-  chainId: bigint;
-}
+export interface WalletConnection { provider: BrowserProvider; address: string; chainId: bigint }
+export const blockchainConfigured = Boolean(registryAddress && ethers.isAddress(registryAddress) && registryAddress !== ethers.ZeroAddress);
+const rpcUrl = import.meta.env.VITE_BLOCKCHAIN_RPC_URL || 'http://127.0.0.1:8545';
+const configuredChainId = Number(import.meta.env.VITE_BLOCKCHAIN_CHAIN_ID || 31337);
 
 function requireWallet() {
-  if (!window.ethereum) throw new Error('MetaMask 또는 호환 지갑이 필요합니다.');
+  if (!window.ethereum) throw new Error('No wallet detected. The API dashboard works without a wallet; install MetaMask only for blockchain transactions.');
   return window.ethereum;
 }
 
 function requireRegistryAddress() {
-  if (!registryAddress || !ethers.isAddress(registryAddress)) {
-    throw new Error('VITE_FUTURE_CASH_REGISTRY_ADDRESS가 설정되지 않았습니다.');
+  if (!blockchainConfigured) {
+    throw new Error('Blockchain is not configured. Deploy FutureCashRegistry and set VITE_FUTURE_CASH_REGISTRY_ADDRESS to enable transactions.');
   }
-  return registryAddress;
+  return registryAddress as string;
 }
 
 export async function connectWallet(): Promise<WalletConnection> {
   const ethereum = requireWallet();
   await ethereum.request({ method: 'eth_requestAccounts' });
   const provider = new BrowserProvider(ethereum);
+  let network = await provider.getNetwork();
+  if (Number(network.chainId) !== configuredChainId) {
+    const chainId = `0x${configuredChainId.toString(16)}`;
+    try {
+      await ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId }] });
+    } catch (error) {
+      if ((error as { code?: number }).code !== 4902) throw error;
+      await ethereum.request({ method: 'wallet_addEthereumChain', params: [{ chainId, chainName: 'Cash Gap Bank Local', nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 }, rpcUrls: [rpcUrl], blockExplorerUrls: [] }] });
+    }
+    network = await provider.getNetwork();
+  }
   const signer = await provider.getSigner();
-  const network = await provider.getNetwork();
   return { provider, address: await signer.getAddress(), chainId: network.chainId };
 }
 
